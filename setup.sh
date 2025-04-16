@@ -1,3 +1,9 @@
+#!/bin/bash
+
+# Install dependencies (already handled by Render, but for manual/local runs)
+pip install -r requirements.txt
+
+
 # Update and install system packages
 sudo apt-get update
 sudo apt-get install portaudio19-dev -y
