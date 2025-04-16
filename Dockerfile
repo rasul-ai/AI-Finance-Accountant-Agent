@@ -1,12 +1,10 @@
 # Use official Python image
 FROM python:3.10-slim
 
-# Install system dependencies required for PyAudio
-RUN apt-get update && apt-get install -y \
-    portaudio19-dev \
-    gcc \
-    libffi-dev \
-    && rm -rf /var/lib/apt/lists/*
+# Install system dependencies
+RUN apt-get update && \
+    apt-get install -y curl gcc portaudio19-dev && \
+    rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
@@ -17,8 +15,20 @@ COPY . .
 # Install Python dependencies
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
-# Make sure setup.sh is executable
-RUN chmod +x setup.sh
 
-# Run the app
-CMD ["bash", "-c", "source setup.sh && uvicorn app:app --host 0.0.0.0 --port 10000"]
+
+# Install spaCy model
+RUN python -m spacy download en_core_web_lg
+
+# Install Ollama
+RUN curl -fsSL https://ollama.com/install.sh | sh
+
+# Pull the Ollama model
+RUN ollama serve & sleep 5 && ollama pull gemma:2b
+
+# Expose the port FastAPI will run on
+EXPOSE 10000
+
+# Start the API
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "10000"]
+
