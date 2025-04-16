@@ -1,12 +1,12 @@
 #!/bin/bash
 
 # Install dependencies (already handled by Render, but for manual/local runs)
-pip install -r requirements.txt
+# pip install -r requirements.txt
 
 
 # Update and install system packages
-sudo apt-get update
-sudo apt-get install portaudio19-dev -y
+# sudo apt-get update
+# sudo apt-get install portaudio19-dev -y
 
 # Install spaCy language model
 python -m spacy download en_core_web_lg
