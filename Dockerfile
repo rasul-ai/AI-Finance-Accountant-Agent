@@ -17,8 +17,8 @@ COPY . .
 # Install Python dependencies
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
-# Make sure env.sh is executable
-RUN chmod +x env.sh
+# Make sure setup.sh is executable
+RUN chmod +x setup.sh
 
 # Run the app
-CMD ["bash", "-c", "source env.sh && uvicorn app:app --host 0.0.0.0 --port 10000"]
+CMD ["bash", "-c", "source setup.sh && uvicorn app:app --host 0.0.0.0 --port 10000"]
