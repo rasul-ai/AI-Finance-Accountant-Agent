@@ -18,7 +18,8 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 
 
 # Install spaCy model
-RUN python -m spacy download en_core_web_lg
+# RUN python -m spacy download en_core_web_lg
+RUN python -m spacy download en_core_web_sm
 
 # Download and unzip the Vosk model
 RUN wget https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip && \
