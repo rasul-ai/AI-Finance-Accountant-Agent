@@ -35,5 +35,6 @@ RUN wget https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip && 
 EXPOSE 10000
 
 # Start the API
-CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "10000"]
+# CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "10000"]
 
+CMD uvicorn app:app --host 0.0.0.0 --port $PORT
