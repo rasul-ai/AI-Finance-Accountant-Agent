@@ -11,6 +11,7 @@ cymem==2.0.11
 dirtyjson==1.0.8
 distro==1.9.0
 duckduckgo-search
+fastapi
 faiss-cpu==1.10.0
 filetype==1.2.0
 fuzzywuzzy==0.18.0
