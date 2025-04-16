@@ -20,6 +20,11 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 # Install spaCy model
 RUN python -m spacy download en_core_web_lg
 
+# Download and unzip the Vosk model
+RUN wget https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip && \
+    unzip vosk-model-small-en-us-0.15.zip && \
+    rm vosk-model-small-en-us-0.15.zip
+
 # Install Ollama
 # RUN curl -fsSL https://ollama.com/install.sh | sh
 
