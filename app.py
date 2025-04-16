@@ -24,7 +24,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 # Vosk model path and audio file path
-vosk_model_path = "/home/bapary/Music/AI Finance Agent/vosk-model-small-en-us-0.15"
+vosk_model_path = "./vosk-model-small-en-us-0.15"
 audio_file_path = "voice/temp_audio.wav"
 
 # Ensure the voice directory exists

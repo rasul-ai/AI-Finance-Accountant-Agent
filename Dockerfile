@@ -21,10 +21,10 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 RUN python -m spacy download en_core_web_lg
 
 # Install Ollama
-RUN curl -fsSL https://ollama.com/install.sh | sh
+# RUN curl -fsSL https://ollama.com/install.sh | sh
 
 # Pull the Ollama model
-RUN ollama serve & sleep 5 && ollama pull gemma:2b
+# RUN ollama serve & sleep 5 && ollama pull gemma:2b
 
 # Expose the port FastAPI will run on
 EXPOSE 10000

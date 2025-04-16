@@ -102,17 +102,17 @@ async def process_query(vosk_model_path, audio_data=None, query_text=None, use_r
                         
                         # Use retriever if specified (optional)
                         if use_retriever:
-                            retriever_response = retriever.retrieve(text, entities)
+                            # retriever_response = retriever.retrieve(text, entities)
                             # retriever_response = sql_db.entity_based_query(entities)
-                            # retriever_response = sql_db.query_db(entities["ticker"], entities["metric"])
+                            retriever_response = sql_db.query_db(entities["ticker"], entities["metric"])
                             final_response = f"{final_response} Additional Info found in the CSV: {retriever_response}"
                             output["retriever_response"] = retriever_response
                     else:
                         # Base response failed, use the retriever
                         output["base_response"] = f"{base_response} Using retriever to query CSV file..."
-                        retriever_response = retriever.retrieve(text, entities)
+                        # retriever_response = retriever.retrieve(text, entities)
                         # retriever_response = sql_db.keyword_match_search(entities)
-                        # retriever_response = sql_db.query_db(entities["ticker"], entities["metric"])
+                        retriever_response = sql_db.query_db(entities["ticker"], entities["metric"])
                         output["retriever_response"] = retriever_response
 
                         if "No relevant data found" in retriever_response:
