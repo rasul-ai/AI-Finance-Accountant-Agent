@@ -1,0 +1,114 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial AI Agent</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body class="bg-purple-100 font-sans !important">
+    <div class="container mx-auto p-1">
+        <h1 class="text-5xl font-bold text-center text-black mb-3 drop-shadow-lg">Financial AI Agent</h1>
+
+        <!-- Recording Buttons -->
+        <div class="bg-white p-3 rounded-lg shadow-lg mb-6">
+            <div class="flex justify-center space-x-4">
+                <button type="button" id="startRecording" class="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-800 transition">
+                <strong>Start Recording</strong>
+                </button>
+                <button type="button" id="stopRecording" class="bg-red-400 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition hidden">
+                <strong>Stop Recording</strong>
+                </button>
+            </div>
+        </div>
+
+        <!-- Input Form -->
+        <div class="bg-white p-3 rounded-lg shadow-lg mb-6">
+            <form id="queryForm" action="/query" method="post" class="flex flex-col space-y-4">
+                <div class="flex space-x-4">
+                    <input type="text" name="query_text" id="queryText" placeholder="User's speech will automatically appear here..." 
+                           class="flex-grow p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black-500" 
+                           value="{{ transcribed_text if transcribed_text else '' }}" readonly>
+                    <button type="submit" id="submitButton" class="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-red-500 transition" disabled>
+                        <strong>Submit Query</strong>
+                    </button>
+                    <!-- Script to change button text on submit -->
+                    <script>
+                        document.addEventListener("DOMContentLoaded", function () {
+                            const form = document.querySelector("form");
+                            const submitButton = document.getElementById("submitButton");
+
+                            form.addEventListener("submit", function () {
+                                submitButton.innerText = "Processing...";
+                                submitButton.disabled = true;
+                            });
+                        });
+                    </script>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <input type="checkbox" name="use_retriever" id="useRetriever" value="yes" class="h-5 w-5 text-indigo-600">
+                    <label for="useRetriever" class="text-gray-700">Use rag to get more information from csv file</label>
+                </div>
+            </form>
+        </div>
+
+        <!-- Output Section -->
+        <div class="bg-white p-3 rounded-lg shadow-lg">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-2">Query Results</h2>
+
+            {% if Error %}
+                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 px-4 py-2">
+                    <p><strong>Error:</strong> {{ Error|trim }}</p>
+                </div>
+            {% endif %}
+
+            {% if User_Query %}
+                <div class="px-4 py-1">
+                    <p><strong>User_Query:</strong> {{ User_Query|trim }}</p>
+                </div>
+            {% endif %}
+
+            {% if Intent %}
+                <div class="px-4 py-1">
+                    <p><strong>Intent:</strong> {{ Intent|trim }}</p>
+                </div>
+            {% endif %}
+
+            {% if Entities %}
+                <div class="px-4 py-1">
+                    <p><strong>Entities:</strong> {{ Entities|trim }}</p>
+                </div>
+            {% endif %}
+
+            {% if API_Response %}
+                <div class="px-4 py-1">
+                    <p><strong>API Response:</strong> {{ API_Response|trim }}</p>
+                </div>
+            {% endif %}
+
+            {% if RAG_Response %}
+                <div class="px-4 py-1">
+                    <p><strong>Retriever Response:</strong> {{ RAG_Response|trim }}</p>
+                </div>
+            {% endif %}
+
+            {% if Web_Search_Response %}
+                <div class="px-4 py-1">
+                    <p><strong>Web Search Response:</strong> {{ Web_Search_Response|trim }}</p>
+                </div>
+            {% endif %}
+
+            {% if Final_Response %}
+                <div class="px-4 py-1 bg-blue-50 border-l-4 border-green-500 rounded-lg">
+                    <p><strong>Final Response:</strong> {{ Final_Response|trim }}</p>
+                </div>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <script src="/static/js/script.js"></script>
+</body>
+</html>
