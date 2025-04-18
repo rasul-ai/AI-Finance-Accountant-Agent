@@ -20,7 +20,7 @@ The Financial AI Agent is an intelligent system designed to query and retrieve c
 
 ## Project Architecture                      
 The Financial AI Agent is structured as a modular system with distinct components, each handling a specific functionality. The architecture follows a pipeline approach: voice input is processed, intent and entities are extracted, data is retrieved from api calling or local directories or web search, and a response is generated for the user.
-[!repo](./repo.jpg)
+![repo](./repo.jpg)
 
 
 ## Project Mechanism Overview
@@ -65,7 +65,7 @@ get_net_income.py, get_revenue.py, get_cash_flow.py, get_balance_sheet.py, etc.
 - These are stored as key-value pairs and passed to the RAG pipeline.
 
 
-**RAG Mechanism:**
+4. RAG Mechanism:
 - Uses all-MiniLM-L6-v2 for embedding both query and dataset entries.
 
 
@@ -79,7 +79,7 @@ get_net_income.py, get_revenue.py, get_cash_flow.py, get_balance_sheet.py, etc.
 
 
 
-4. Fallback Logic for Robustness
+5. Fallback Logic for Robustness
 - If the FMP API fails, the RAG pipeline is automatically triggered to retrieve data from local CSV files, Excel sheets, or tabular datasets.
 
 
@@ -90,7 +90,7 @@ get_net_income.py, get_revenue.py, get_cash_flow.py, get_balance_sheet.py, etc.
 
 
 
-5. Error Handling
+6. Error Handling
 Robust error-handling mechanisms are built into every step of the process to ensure the system remains reliable and user-friendly during unexpected failures or incomplete inputs.
 
 ## User Interface Overview
@@ -129,13 +129,14 @@ uvicorn app:app --reload
 ## External Data Sources
 ### Financial Modeling Prep (FMP)
 FMP is the open-source for the most reliable and accurate Stock Market API and Financial Data API. They provides real-time stock prices, financial statements, or historical data or a comprehensive solution to meet all the financial data needs for free.
+
 **API key link:** https://site.financialmodelingprep.com/developer/docs/dashboard
 N.B: The provide a free tier of 250 request per day.
 
 **Sample Endpoints:**
-https://financialmodelingprep.com/api/v3/income-statement/{ticker}
-https://financialmodelingprep.com/api/v3/historical-price-full/{ticker}
-https://financialmodelingprep.com/api/v3/balance-sheet-statement/{ticker}
+- https://financialmodelingprep.com/api/v3/income-statement/{ticker}
+- https://financialmodelingprep.com/api/v3/historical-price-full/{ticker}
+- https://financialmodelingprep.com/api/v3/balance-sheet-statement/{ticker}
 
 **Financial data sp500 companies.csv (kaggle)**
 This dataset represents 500 company's financial statements  based on USA to analyze the company's stock price in the share market. The data is scrapped from the yahoo finance API.
