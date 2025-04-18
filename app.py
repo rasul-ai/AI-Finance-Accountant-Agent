@@ -1,15 +1,15 @@
-# app.py
-from fastapi import FastAPI, Request, Form
+from fastapi import FastAPI, Request, Form, File, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from main import process_query
 from voice.speech_to_text import SpeechToText
 import os
-import asyncio
-import pyaudio
-import wave
 import logging
+import tempfile
+import shutil
+import wave
+from pydub import AudioSegment
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -23,121 +23,103 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # Set up templates
 templates = Jinja2Templates(directory="templates")
 
-# Vosk model path and audio file path
-vosk_model_path = "./vosk-model-small-en-us-0.15"
-audio_file_path = "voice/temp_audio.wav"
 
-# Ensure the voice directory exists
-os.makedirs("voice", exist_ok=True)
+# Vosk model path
+vosk_model_path = "./vosk-model-small-en-us-0.15"
 
 # Initialize SpeechToText
 stt = SpeechToText(model_path=vosk_model_path)
 
-# Global variables for recording state
-recording = False
-audio_frames = []
-recording_task = None
-
-def save_audio_to_wav(frames, sample_rate=16000):
-    """Save audio frames to a WAV file."""
+def is_valid_wav(file_path):
+    """Check if the file is a valid WAV file."""
     try:
-        logger.info(f"Saving audio to {audio_file_path} with {len(frames)} frames")
-        wf = wave.open(audio_file_path, 'wb')
-        wf.setnchannels(1)
-        wf.setsampwidth(2)  # 16-bit
-        wf.setframerate(sample_rate)
-        wf.writeframes(b''.join(frames))
-        wf.close()
-        if os.path.exists(audio_file_path):
-            logger.info(f"WAV file saved successfully: {os.path.getsize(audio_file_path)} bytes")
-        else:
-            logger.error("WAV file was not created")
-    except Exception as e:
-        logger.error(f"Error saving WAV file: {str(e)}")
-        raise
+        with wave.open(file_path, 'rb') as wf:
+            logger.info(f"WAV file validated: channels={wf.getnchannels()}, rate={wf.getframerate()}, frames={wf.getnframes()}")
+            return True
+    except wave.Error as e:
+        logger.error(f"Invalid WAV file: {str(e)}")
+        return False
 
-async def record_audio():
-    """Background task to record audio."""
-    global audio_frames
-    p = pyaudio.PyAudio()
+def convert_to_wav(input_path, output_path):
+    """Convert input audio to WAV format (16kHz, mono, 16-bit PCM)."""
     try:
-        stream = p.open(format=pyaudio.paInt16, channels=1, rate=16000, input=True, frames_per_buffer=1024)
-        stream.start_stream()
-        logger.info("Recording started...")
-
-        while recording:
-            data = stream.read(1024, exception_on_overflow=False)
-            audio_frames.append(data)
-            await asyncio.sleep(0.01)  # Small sleep to prevent blocking
-
-        stream.stop_stream()
-        stream.close()
-        logger.info(f"Recording stopped, captured {len(audio_frames)} frames")
+        audio = AudioSegment.from_file(input_path)
+        audio = audio.set_channels(1).set_frame_rate(16000).set_sample_width(2)  # 16-bit PCM
+        audio.export(output_path, format="wav")
+        logger.info(f"Converted audio to WAV: {output_path}, size: {os.path.getsize(output_path)} bytes")
+        return True
     except Exception as e:
-        logger.error(f"Error during recording: {str(e)}")
-    finally:
-        p.terminate()
+        logger.error(f"Failed to convert audio to WAV: {str(e)}")
+        return False
 
 @app.get("/", response_class=HTMLResponse)
 async def get_index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-@app.post("/start_recording", response_class=JSONResponse)
-async def start_recording():
-    global recording, audio_frames, recording_task
-    if not recording:
-        recording = True
-        audio_frames = []
-        recording_task = asyncio.create_task(record_audio())
-        logger.info("Started recording task")
-        return {"status": "Recording started"}
-    logger.warning("Recording already in progress")
-    return {"status": "Already recording"}
+@app.post("/upload_audio", response_class=HTMLResponse)
+async def upload_audio(request: Request, audio_file: UploadFile = File(...)):
+    # Use a temporary directory to store the uploaded audio file
+    try:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Save the uploaded file (could be WebM, OGG, etc.)
+            input_file_path = os.path.join(temp_dir, "input_audio.webm")
+            with open(input_file_path, "wb") as buffer:
+                shutil.copyfileobj(audio_file.file, buffer)
+                file_size = os.path.getsize(input_file_path) if os.path.exists(input_file_path) else 0
+                logger.info(f"Uploaded audio saved to {input_file_path}, size: {file_size} bytes")
 
-@app.post("/stop_recording", response_class=HTMLResponse)
-async def stop_recording(request: Request):
-    global recording, recording_task
-    if recording:
-        recording = False
-        if recording_task:
-            await recording_task  # Wait for the recording task to complete
-            recording_task = None
-
-        # Save the audio to WAV
-        try:
-            save_audio_to_wav(audio_frames)
-        except Exception as e:
-            logger.error(f"Failed to save audio: {str(e)}")
-            return templates.TemplateResponse("index.html", {
-                "request": request,
-                "error": f"Failed to save audio: {str(e)}"
-            })
-
-        # Transcribe the saved audio
-        try:
-            text = stt.transcribe_audio(audio_file_path)
-            logger.info(f"Transcription result: '{text}'")
-            if not text:
-                logger.warning("Transcription returned no text")
+            # Verify file was saved
+            if not os.path.exists(input_file_path) or file_size == 0:
+                logger.error("Uploaded audio file was not saved correctly")
                 return templates.TemplateResponse("index.html", {
                     "request": request,
-                    "error": "Could not understand the audio."
+                    "error": "Failed to save uploaded audio file."
                 })
-            return templates.TemplateResponse("index.html", {
-                "request": request,
-                "transcribed_text": text
-            })
-        except Exception as e:
-            logger.error(f"Transcription error: {str(e)}")
-            return templates.TemplateResponse("index.html", {
-                "request": request,
-                "error": f"Transcription error: {str(e)}"
-            })
-    logger.warning("No recording in progress")
-    return templates.TemplateResponse("index.html", {
-        "request": request,
-        "error": "No recording in progress."
-    })
+
+            # Convert to WAV
+            wav_file_path = os.path.join(temp_dir, "temp_audio.wav")
+            if not convert_to_wav(input_file_path, wav_file_path):
+                logger.error("Audio conversion to WAV failed")
+                return templates.TemplateResponse("index.html", {
+                    "request": request,
+                    "error": "Failed to convert audio to WAV format."
+                })
+
+            # Validate WAV file
+            if not is_valid_wav(wav_file_path):
+                logger.error("Converted file is not a valid WAV file")
+                return templates.TemplateResponse("index.html", {
+                    "request": request,
+                    "error": "Converted audio is not a valid WAV file."
+                })
+
+            # Transcribe the WAV file
+            try:
+                text = stt.transcribe_audio(wav_file_path)
+                logger.info(f"Transcription result: '{text}'")
+                if not text:
+                    logger.warning("Transcription returned no text")
+                    return templates.TemplateResponse("index.html", {
+                        "request": request,
+                        "error": "Could not understand the audio. Please try speaking clearly."
+                    })
+                return templates.TemplateResponse("index.html", {
+                    "request": request,
+                    "transcribed_text": text
+                })
+            except Exception as e:
+                logger.error(f"Transcription error: {str(e)}")
+                return templates.TemplateResponse("index.html", {
+                    "request": request,
+                    "error": f"Transcription error: {str(e)}"
+                })
+
+    except Exception as e:
+        logger.error(f"Error processing uploaded audio: {str(e)}")
+        return templates.TemplateResponse("index.html", {
+            "request": request,
+            "error": f"Error processing audio: {str(e)}"
+        })
 
 @app.post("/query", response_class=HTMLResponse)
 async def handle_query(request: Request, query_text: str = Form(...), use_retriever: str = Form("no")):

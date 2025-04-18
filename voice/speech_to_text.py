@@ -1,7 +1,7 @@
 # voice/speech_to_text.py
 import wave
 import vosk
-import pyaudio
+# import pyaudio
 import io
 import json
 from vosk import Model, KaldiRecognizer

@@ -1,4 +1,3 @@
-# rag/retriever.py
 import os
 import pandas as pd
 import faiss
@@ -8,13 +7,20 @@ from .embedder import Embedder
 from datetime import datetime
 
 class SQL_Key_Pair:
-    def __init__(self, file_path="financial data sp500 companies.csv", model_name="all-MiniLM-L6-v2", db_path="financial_data.db"):
+    def __init__(self, file_path="financial_data.csv", model_name="all-MiniLM-L6-v2", db_path="/app/db/financial_data.db"):
+        # Ensure the database directory exists
+        os.makedirs(os.path.dirname(db_path), exist_ok=True)
         self.embedder = Embedder(model_name)
         self.index = None
         self.documents = []
         self.data = None
         self.embeddings = None
-        self.db_conn = sqlite3.connect(db_path)
+        try:
+            self.db_conn = sqlite3.connect(db_path)
+            print(f"Connected to SQLite database at {db_path}")
+        except sqlite3.OperationalError as e:
+            print(f"Failed to connect to database: {e}")
+            raise
         self.create_db_table()
         self.load_data(file_path)
 
@@ -36,6 +42,7 @@ class SQL_Key_Pair:
             )
         """)
         self.db_conn.commit()
+        print("Created custom_financials table")
 
     def load_data(self, file_path):
         """
@@ -119,7 +126,6 @@ class SQL_Key_Pair:
 
         return retrieved_text
 
-
     def query_csv(self, query, k=3):
         """
         Query the CSV data with a user query.
@@ -139,7 +145,6 @@ class SQL_Key_Pair:
             responses.append(response)
 
         return "\n".join(responses)
-
 
     def entity_based_query(self, entities):
         return self.keyword_match_search(entities)
@@ -162,10 +167,15 @@ class SQL_Key_Pair:
                 value = result[0]
                 value_in_billions = value / 1_000_000_000
                 return f"{metric} for {ticker}: ${value_in_billions:.2f} billion."
-            return f"No {metric} data found for {ticker}."
+            return f"No relevant data found for {ticker}."
         except Exception as e:
             print(f"Error querying database: {e}")
             return f"Error querying database: {str(e)}"
 
     def __del__(self):
-        self.db_conn.close()
+        try:
+            if hasattr(self, 'db_conn') and self.db_conn:
+                self.db_conn.close()
+                print("Closed SQLite database connection")
+        except Exception as e:
+            print(f"Error closing database connection: {e}")

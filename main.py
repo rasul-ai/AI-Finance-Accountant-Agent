@@ -3,6 +3,7 @@ import asyncio
 import importlib
 from voice.speech_to_text import SpeechToText
 from voice.intent_classifier import IntentClassifier
+# from voice.classifier import TextClassifier
 from api.endpoints import FMPEndpoints
 from rag.retriever import Retriever
 from rag.sql_db import SQL_Key_Pair
@@ -12,6 +13,7 @@ async def process_query(vosk_model_path, audio_data=None, query_text=None, use_r
     # Step 1: Initialize components
     stt = SpeechToText(model_path=vosk_model_path)
     classifier = IntentClassifier()
+    # classifier = TextClassifier()
     endpoints = FMPEndpoints()
     # initialize rag tools
     retriever = Retriever(file_path="./data/financial_data.csv")

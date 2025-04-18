@@ -1,4 +1,3 @@
-<!-- templates/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="/static/css/styles.css">
 </head>
-<body class="bg-purple-100 font-sans !important">
+<body class="bg-purple-100 font-sans">
     <div class="container mx-auto p-1">
         <h1 class="text-5xl font-bold text-center text-black mb-3 drop-shadow-lg">Financial AI Agent</h1>
 
@@ -16,10 +15,10 @@
         <div class="bg-white p-3 rounded-lg shadow-lg mb-6">
             <div class="flex justify-center space-x-4">
                 <button type="button" id="startRecording" class="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-800 transition">
-                <strong>Start Recording</strong>
+                    <strong>Start Recording</strong>
                 </button>
                 <button type="button" id="stopRecording" class="bg-red-400 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition hidden">
-                <strong>Stop Recording</strong>
+                    <strong>Stop Recording</strong>
                 </button>
             </div>
         </div>
@@ -34,18 +33,6 @@
                     <button type="submit" id="submitButton" class="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-red-500 transition" disabled>
                         <strong>Submit Query</strong>
                     </button>
-                    <!-- Script to change button text on submit -->
-                    <script>
-                        document.addEventListener("DOMContentLoaded", function () {
-                            const form = document.querySelector("form");
-                            const submitButton = document.getElementById("submitButton");
-
-                            form.addEventListener("submit", function () {
-                                submitButton.innerText = "Processing...";
-                                submitButton.disabled = true;
-                            });
-                        });
-                    </script>
                 </div>
                 <div class="flex items-center space-x-2">
                     <input type="checkbox" name="use_retriever" id="useRetriever" value="yes" class="h-5 w-5 text-indigo-600">
@@ -106,9 +93,122 @@
                 </div>
             {% endif %}
         </div>
-
     </div>
 
-    <script src="/static/js/script.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const startRecording = document.getElementById("startRecording");
+            const stopRecording = document.getElementById("stopRecording");
+            const queryText = document.getElementById("queryText");
+            const submitButton = document.getElementById("submitButton");
+            const form = document.getElementById("queryForm");
+            let mediaRecorder = null;
+            let audioStream = null;
+            let audioChunks = [];
+
+            // Request microphone permission and start recording
+            startRecording.addEventListener("click", async () => {
+                try {
+                    audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(audioStream);
+
+                    mediaRecorder.ondataavailable = (event) => {
+                        if (event.data.size > 0) {
+                            audioChunks.push(event.data);
+                            console.log("Audio chunk received, size:", event.data.size, "type:", event.data.type);
+                        }
+                    };
+
+                    mediaRecorder.onstop = async () => {
+                        // Stop all tracks to release the microphone
+                        if (audioStream) {
+                            audioStream.getTracks().forEach(track => {
+                                track.stop();
+                                console.log("Track stopped:", track);
+                            });
+                            audioStream = null;
+                        }
+
+                        // Create audio blob (use browser's default format)
+                        const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
+                        console.log("Audio blob created, size:", audioBlob.size, "type:", audioBlob.type);
+                        const formData = new FormData();
+                        formData.append("audio_file", audioBlob, "recorded_audio.webm");
+
+                        try {
+                            const response = await fetch("/upload_audio", {
+                                method: "POST",
+                                body: formData
+                            });
+
+                            const html = await response.text();
+                            // Parse the response HTML to extract transcribed text or error
+                            const parser = new DOMParser();
+                            const doc = parser.parseFromString(html, "text/html");
+                            const transcribedText = doc.querySelector("input[name='query_text']").value;
+                            const error = doc.querySelector(".bg-red-100 p")?.textContent;
+
+                            if (error) {
+                                alert(error);
+                            } else if (transcribedText) {
+                                queryText.value = transcribedText;
+                                queryText.readOnly = false; // Allow editing
+                                submitButton.disabled = false; // Enable submit button
+                            }
+
+                            // Reset UI
+                            startRecording.classList.remove("hidden");
+                            stopRecording.classList.add("hidden");
+                            audioChunks = [];
+                            mediaRecorder = null;
+                        } catch (error) {
+                            console.error("Error uploading audio:", error);
+                            alert("Failed to process audio: " + error.message);
+                            startRecording.classList.remove("hidden");
+                            stopRecording.classList.add("hidden");
+                        }
+                    };
+
+                    mediaRecorder.onerror = (event) => {
+                        console.error("MediaRecorder error:", event.error);
+                        alert("Recording error: " + event.error.message);
+                    };
+
+                    mediaRecorder.start(100); // Collect chunks every 100ms
+                    console.log("Recording started, MIME type:", mediaRecorder.mimeType);
+                    startRecording.classList.add("hidden");
+                    stopRecording.classList.remove("hidden");
+                } catch (error) {
+                    console.error("Error accessing microphone:", error);
+                    alert("Could not access microphone. Please check permissions.");
+                }
+            });
+
+            // Stop recording
+            stopRecording.addEventListener("click", () => {
+                if (mediaRecorder && mediaRecorder.state !== "inactive") {
+                    console.log("Stopping recording, current state:", mediaRecorder.state);
+                    mediaRecorder.stop();
+                } else {
+                    console.warn("MediaRecorder is not active or not initialized");
+                }
+
+                // Ensure stream tracks are stopped even if MediaRecorder fails
+                if (audioStream) {
+                    audioStream.getTracks().forEach(track => {
+                        track.stop();
+                        console.log("Track stopped:", track);
+                    });
+                    audioStream = null;
+                }
+            });
+
+            // Handle form submission
+            form.addEventListener("submit", () => {
+                submitButton.innerText = "Processing...";
+                submitButton.disabled = true;
+            });
+        });
+    </script>
 </body>
 </html>

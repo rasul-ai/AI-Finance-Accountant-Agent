@@ -9,8 +9,8 @@ from difflib import SequenceMatcher
 class IntentClassifier:
     def __init__(self):
         # Use a larger model for better NER (optional)
-        self.nlp = spacy.load("en_core_web_sm")  # "en_core_web_lg"
-        self.classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
+        self.nlp = spacy.load("en_core_web_lg")  # "en_core_web_sm"
+        self.classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli", from_pt=True)
         self.intents = [
             "get_net_income",
             "get_revenue",
