@@ -20,7 +20,7 @@ The Financial AI Agent is an intelligent system designed to query and retrieve c
 
 ## Project Architecture                      
 The Financial AI Agent is structured as a modular system with distinct components, each handling a specific functionality. The architecture follows a pipeline approach: voice input is processed, intent and entities are extracted, data is retrieved from api calling or local directories or web search, and a response is generated for the user.
-[repo](./repo.jpg)
+[!repo](./repo.jpg)
 
 
 ## Project Mechanism Overview
