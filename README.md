@@ -1,4 +1,5 @@
 # Documentation of Financial AI Agent
+## 🌐 Project  [Live Link](https://huggingface.co/spaces/rasulbrur/Financial-AI-Agent)
 ## Overview
 The Financial AI Agent is an intelligent system designed to query and retrieve critical financial data from bank and company financial statements using voice recognition. It enables users to access key financial metrics (e.g., net income, revenue) and manage company assets efficiently. The system integrates voice input, natural language processing (NLP), data retrieval from CSV files and the web, and response generation to provide accurate and actionable financial insights. The project is fully functional on a CPU machine.
 
